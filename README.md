@@ -11,8 +11,12 @@ Feel free to contribute or ask for explanation.
 
 ## How do I use this template ?
 
-Easy, copy this repo on your local machine and just copy-paste the content to your own
+Easy, clone this repo on your machine and just copy-paste the content to your own
 project !
+
+```bash
+git clone https://github.com/hauanitech/FastAPI-Template
+```
 
 ## Development process
 ### How to run the project :
