@@ -9,6 +9,10 @@ class UserBase(BaseModel):
     password: str = Field(min_length=8, max_length=40)
 
 
+class UserUpdate(BaseModel):
+    username: str | None
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str

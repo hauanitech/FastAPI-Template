@@ -6,14 +6,14 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
-from api.user.models import UserBase, Users, Token
+from api.user.models import UserBase, Users, Token, UserUpdate
 from core.security import (
     bcrypt_context,
     authenticate_user,
     create_access_token,
     SessionDep,
     SuperDep,
-    UserDep,
+    UserDep
 )
 from core.config import SUPERUSER_PASSWORD, SUPERUSER_USERNAME
 
@@ -46,7 +46,7 @@ async def login_for_access_token(
     user = authenticate_user(form_data.username, form_data.password, Session)
 
     if not user:
-        raise HTTPException(status_code="401", detail="Could Not Authenticate User")
+        raise HTTPException(status_code=401, detail="Could Not Authenticate User")
 
     token = create_access_token(user.username, str(user.id), timedelta(minutes=30))
     return {"access_token": token, "token_type": "bearer"}
@@ -59,5 +59,68 @@ async def get_current_user(*, Session: SessionDep, User: UserDep):
 
 
 @router.get("/get_users")
-async def get_users(Session: SessionDep, User: SuperDep):
-    return Session.query(Users).all()
+async def get_users(
+    *,
+    Session: SessionDep,
+    User: SuperDep,
+    is_superuser: bool | None,
+    is_admin: bool | None
+):
+    return Session.query(Users).filter(is_superuser == is_superuser and is_admin == is_admin).all()
+
+
+@router.get("/get_user_by_id/{user_id}")
+async def get_user_by_id(
+    *,
+    Session: SessionDep,
+    User: SuperDep,
+    user_id = uuid.UUID
+):
+    db_user = Session.query(Users).filter(Users.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User Not Found")
+    return {"data" : db_user}
+
+
+@router.put("/update_my_username")
+async def update_my_username(
+    *,
+    Session: SessionDep,
+    User: UserDep,
+    data: UserUpdate
+):
+    db_user = Session.query(Users).filter(Users.id == uuid.UUID(User["id"])).first()
+    db_user.username = data.username
+    Session.commit()
+    return {"data" : "Username Updated Successfully"}
+
+
+@router.put("/update_user_by_id/{user_id}")
+async def update_user_by_id(
+    *,
+    Session: SessionDep,
+    User: SuperDep,
+    user_id: uuid.UUID
+):
+    db_user = Session.query(Users).filter(Users.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User Not Found")
+    return {"data" : db_user}
+
+
+@router.delete("/delete_user/{user_id}")
+async def delete_user(
+    *,
+    Session: SessionDep,
+    User: SuperDep,
+    user_id: uuid.UUID
+):
+    db_user = Session.query(Users).filter(Users.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User Not Found")
+    if db_user.is_superuser:
+        raise HTTPException(status_code=401, detail="Not Deletable User")
+    
+    Session.delete(db_user)
+    Session.commit()
+    return {"data" : "User Deleted Successfully"}
