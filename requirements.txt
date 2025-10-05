@@ -6,7 +6,8 @@ pydantic
 
 dotenv
 python-jose[cryptography]
-passlib[bcrypt]
+passlib
+bcrypt==4.3.0
 python-multipart
 
 ruff
