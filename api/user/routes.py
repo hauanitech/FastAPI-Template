@@ -63,15 +63,16 @@ async def get_users(
     *,
     Session: SessionDep,
     User: SuperDep,
-    is_superuser: bool | None = False,
-    is_admin: bool | None = False,
+    is_superuser: bool | None = None,
+    is_admin: bool | None = None,
 ):
-    return (
-        Session.query(Users)
-        .filter(Users.is_superuser == is_superuser)
-        .filter(Users.is_admin == is_admin)
-        .all()
-    )
+    query = Session.query(Users)
+    if is_superuser is not None:
+        query = query.filter(Users.is_superuser == is_superuser)
+    if is_admin is not None:
+        query = query.filter(Users.is_admin == is_admin)
+    users = query.all()
+    return {"data": users}
 
 
 @router.get("/get_user_by_id/{user_id}")
@@ -109,13 +110,3 @@ async def delete_user(*, Session: SessionDep, User: SuperDep, user_id: uuid.UUID
     Session.delete(db_user)
     Session.commit()
     return {"data": "User Deleted Successfully"}
-
-
-@router.delete("/delete_all_users")
-async def delete_all_users(*, Session: SessionDep, User: SuperDep):
-    """Only use to restart the whole DB User Table"""
-    db_users = Session.query(Users).all()
-    for user in db_users:
-        Session.delete(user)
-    Session.commit()
-    return {"data": "Users Deleted Successfully"}
