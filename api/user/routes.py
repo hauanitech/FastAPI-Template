@@ -13,7 +13,7 @@ from core.security import (
     create_access_token,
     SessionDep,
     SuperDep,
-    UserDep
+    UserDep,
 )
 from core.config import SUPERUSER_PASSWORD, SUPERUSER_USERNAME
 
@@ -63,64 +63,59 @@ async def get_users(
     *,
     Session: SessionDep,
     User: SuperDep,
-    is_superuser: bool | None,
-    is_admin: bool | None
+    is_superuser: bool | None = False,
+    is_admin: bool | None = False,
 ):
-    return Session.query(Users).filter(is_superuser == is_superuser and is_admin == is_admin).all()
+    return (
+        Session.query(Users)
+        .filter(Users.is_superuser == is_superuser)
+        .filter(Users.is_admin == is_admin)
+        .all()
+    )
 
 
 @router.get("/get_user_by_id/{user_id}")
-async def get_user_by_id(
-    *,
-    Session: SessionDep,
-    User: SuperDep,
-    user_id = uuid.UUID
-):
+async def get_user_by_id(*, Session: SessionDep, User: SuperDep, user_id=uuid.UUID):
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
-    return {"data" : db_user}
+    return {"data": db_user}
 
 
-@router.put("/update_my_username")
-async def update_my_username(
-    *,
-    Session: SessionDep,
-    User: UserDep,
-    data: UserUpdate
-):
+@router.put("/update_my_user")
+async def update_my_user(*, Session: SessionDep, User: UserDep, data: UserUpdate):
     db_user = Session.query(Users).filter(Users.id == uuid.UUID(User["id"])).first()
     db_user.username = data.username
     Session.commit()
-    return {"data" : "Username Updated Successfully"}
+    return {"data": "Username Updated Successfully"}
 
 
 @router.put("/update_user_by_id/{user_id}")
-async def update_user_by_id(
-    *,
-    Session: SessionDep,
-    User: SuperDep,
-    user_id: uuid.UUID
-):
+async def update_user_by_id(*, Session: SessionDep, User: SuperDep, user_id: uuid.UUID):
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
-    return {"data" : db_user}
+    return {"data": db_user}
 
 
 @router.delete("/delete_user/{user_id}")
-async def delete_user(
-    *,
-    Session: SessionDep,
-    User: SuperDep,
-    user_id: uuid.UUID
-):
+async def delete_user(*, Session: SessionDep, User: SuperDep, user_id: uuid.UUID):
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
     if db_user.is_superuser:
         raise HTTPException(status_code=401, detail="Not Deletable User")
-    
+
     Session.delete(db_user)
     Session.commit()
-    return {"data" : "User Deleted Successfully"}
+    return {"data": "User Deleted Successfully"}
+
+
+@router.delete("/delete_all_users")
+async def delete_all_users(*, Session: SessionDep, User: SuperDep):
+    """Only use to restart the whole DB User Table"""
+    db_users = Session.query(Users).all()
+    for user in db_users:
+        Session.delete(user)
+    Session.commit()
+    return {"data": "Users Deleted Successfully"}
