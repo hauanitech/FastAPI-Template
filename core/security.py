@@ -54,7 +54,19 @@ async def get_superuser(
     if not user or not user.is_superuser:
         raise HTTPException(
             status_code=403,
-            detail="Insufficient permissions. Superuser access required.",
+            detail="Insufficient Permissions. Superuser access required.",
+        )
+    return current_user
+
+
+async def get_admin(
+    current_user: Annotated[dict, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    user = db.query(Users).filter(Users.id == uuid.UUID(current_user["id"])).first()
+    if not user or not user.is_admin:
+        raise HTTPException(
+            status_code=403, detail="Insufficient Permissions. Admin Access Required"
         )
     return current_user
 
@@ -62,3 +74,4 @@ async def get_superuser(
 SessionDep = Annotated[Session, Depends(get_db)]
 UserDep = Annotated[dict, Depends(get_current_user)]
 SuperDep = Annotated[dict, Depends(get_superuser)]
+AdminDep = Annotated[dict, Depends(get_admin)]

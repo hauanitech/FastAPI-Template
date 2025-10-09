@@ -50,4 +50,4 @@ def create_superuser():
     return {"data": "Superuser Created Successfully"}
 
 
-create_superuser()
+create_superuser()  # generates superuser on backend startup

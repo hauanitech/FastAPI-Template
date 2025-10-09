@@ -8,3 +8,4 @@ class TableBase(Base):
     id = Column(UUID, primary_key=True, index=True)
     created_at = Column(String)
     updated_at = Column(String)
+    created_by = Column(UUID)

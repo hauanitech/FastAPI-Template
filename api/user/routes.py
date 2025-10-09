@@ -14,6 +14,7 @@ from core.security import (
     SessionDep,
     SuperDep,
     UserDep,
+    AdminDep,
 )
 from core.config import SUPERUSER_PASSWORD, SUPERUSER_USERNAME
 
@@ -23,6 +24,8 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 @router.post("/register_user")
 async def register_user(*, Session: SessionDep, user: UserBase):
+    """Route for registering | creating user"""
+
     user_db = Users(
         id=uuid.uuid4(),
         username=user.username,
@@ -43,6 +46,8 @@ async def register_user(*, Session: SessionDep, user: UserBase):
 async def login_for_access_token(
     *, Session: SessionDep, form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
+    """Login Route, uses JWT + OAuth for verifying auth request"""
+
     user = authenticate_user(form_data.username, form_data.password, Session)
 
     if not user:
@@ -54,6 +59,8 @@ async def login_for_access_token(
 
 @router.get("/get_current_user")
 async def get_current_user(*, Session: SessionDep, User: UserDep):
+    """Route for fetching self user infos"""
+
     user_db = Session.query(Users).filter(Users.id == uuid.UUID(User["id"])).first()
     return user_db
 
@@ -62,10 +69,13 @@ async def get_current_user(*, Session: SessionDep, User: UserDep):
 async def get_users(
     *,
     Session: SessionDep,
-    User: SuperDep,
+    User: AdminDep,
     is_superuser: bool | None = None,
     is_admin: bool | None = None,
 ):
+    """Route for fetching all users in the database"""
+    """Features filtering by user type"""
+
     query = Session.query(Users)
     if is_superuser is not None:
         query = query.filter(Users.is_superuser == is_superuser)
@@ -76,7 +86,10 @@ async def get_users(
 
 
 @router.get("/get_user_by_id/{user_id}")
-async def get_user_by_id(*, Session: SessionDep, User: SuperDep, user_id=uuid.UUID):
+async def get_user_by_id(*, Session: SessionDep, User: AdminDep, user_id=uuid.UUID):
+    """Route for getting user info using ID"""
+    """Only allowed for higher users"""
+
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
@@ -85,6 +98,8 @@ async def get_user_by_id(*, Session: SessionDep, User: SuperDep, user_id=uuid.UU
 
 @router.put("/update_my_user")
 async def update_my_user(*, Session: SessionDep, User: UserDep, data: UserUpdate):
+    """Route for updating self user info"""
+
     db_user = Session.query(Users).filter(Users.id == uuid.UUID(User["id"])).first()
     db_user.username = data.username
     Session.commit()
@@ -93,6 +108,9 @@ async def update_my_user(*, Session: SessionDep, User: UserDep, data: UserUpdate
 
 @router.put("/update_user_by_id/{user_id}")
 async def update_user_by_id(*, Session: SessionDep, User: SuperDep, user_id: uuid.UUID):
+    """Update User by id"""
+    """Allowed for higher users"""
+
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
@@ -101,6 +119,9 @@ async def update_user_by_id(*, Session: SessionDep, User: SuperDep, user_id: uui
 
 @router.delete("/delete_user/{user_id}")
 async def delete_user(*, Session: SessionDep, User: SuperDep, user_id: uuid.UUID):
+    """Delete user by ID"""
+    """Allowed for higher users"""
+
     db_user = Session.query(Users).filter(Users.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User Not Found")
