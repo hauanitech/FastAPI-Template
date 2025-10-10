@@ -18,6 +18,7 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/api/user/login")
 
 
 def authenticate_user(username: str, password: str, db):
+    """Authenticate User by comparing password and hashed password"""
     user = db.query(Users).filter(Users.username == username).first()
     if not user:
         return False
@@ -32,6 +33,7 @@ def create_access_token(username: str, user_id: str, expires_delta: timedelta):
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    """Verifies if User is logged in"""
     try:
         payload = jwt.decode(token, JWT_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
@@ -50,6 +52,7 @@ async def get_superuser(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    """Used for Superuser Dependency"""
     user = db.query(Users).filter(Users.id == uuid.UUID(current_user["id"])).first()
     if not user or not user.is_superuser:
         raise HTTPException(
@@ -63,6 +66,7 @@ async def get_admin(
     current_user: Annotated[dict, Depends(get_current_user)],
     db: Annotated[Session, Depends(get_db)],
 ):
+    """Used for Admin Dependency"""
     user = db.query(Users).filter(Users.id == uuid.UUID(current_user["id"])).first()
     if not user or not user.is_admin:
         raise HTTPException(
