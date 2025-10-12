@@ -86,7 +86,7 @@ async def get_users(
 
 
 @router.get("/get_user_by_id/{user_id}")
-async def get_user_by_id(*, Session: SessionDep, User: AdminDep, user_id=uuid.UUID):
+async def get_user_by_id(*, Session: SessionDep, User: AdminDep, user_id: uuid.UUID):
     """Route for getting user info using ID"""
     """Only allowed for higher users"""
 
